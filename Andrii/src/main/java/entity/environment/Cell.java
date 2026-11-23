@@ -1,11 +1,13 @@
 package entity.environment;
 
-import entity.abstraction.Organism;
-import java.util.ArrayList;
-import java.util.List;
 import entity.abstraction.Animal;
+import entity.abstraction.Organism;
 import entity.abstraction.OrganismType;
 import entity.impl.Plant;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Cell {
    private final int x;
@@ -20,9 +22,12 @@ public class Cell {
      public synchronized void growPlants(){
          // 1. Рахуємо поточну кількість рослин на даній клітині
          long plantCount = organisms.stream().filter(o -> o.getType() == OrganismType.PLANT).count();
-         // 2. Якщо ліміт не досягнуто (менше 200), cпробуємо додати, наприклад, 5 нових рослин за один такт
+         // 2. Додаємо невелику випадкову кількість нових рослин (від 150 до 200), не перевищуючи ліміт клітини
          int maxPlants = OrganismType.PLANT.getMaxOnCell();
-              for(int i = 0; i < 200; i++){
+         int newPlantsToGrow = ThreadLocalRandom.current().nextInt(150, 201);
+
+
+              for(int i = 0; i < newPlantsToGrow; i++){
                   if(plantCount < maxPlants){
                       addOrganism(new Plant());
                       plantCount++;// збільшуємо лічильник, щоб не вийти за ліміт
@@ -75,7 +80,7 @@ public class Cell {
        }
    }
 // 3. Фаза пересування
-    public synchronized void move(IslandMap map) {
+    public void move(IslandMap map) {
        for (Organism organism : getOrganisms()){
            if(organism instanceof  Animal animal && !animal.getDead()){
                animal.move(this, map);

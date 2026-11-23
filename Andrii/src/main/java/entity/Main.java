@@ -1,9 +1,8 @@
 package entity;
 
-import entity.environment.IslandMap;
 import entity.environment.IslandInitializer;
+import entity.environment.IslandMap;
 import entity.environment.SimulationEngine;
-import ua.com.javarush.jsquad.m1.island.Island;
 
 
 public class Main {

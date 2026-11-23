@@ -25,7 +25,7 @@ public class SimulationEngine {
 
     // Consumer<Cell> phaseAction — передаємо дію для клітини як параметр (наприклад, Cell::eat або Cell::reproduce)
      private void runPhaseParallel(Consumer<Cell> phaseAction){
-         // Список для зберігання "квитанцій" (Future), які підтверджують відправку задач
+         // Список для зберігання "квитанцій" (Future), які підтверджують вирушення задач
          List<Future<?>> futures = new ArrayList<>();
          // 1. Відправляємо кожну клітину острова на обробку в пул потоків
          for (int x = 0; x < map.getWidth(); x++){
@@ -55,7 +55,8 @@ public class SimulationEngine {
          }
 
      }
-
+     private int currentTick = 0; //лічильник
+     private static final int MAX_TICKS = 100; // ліміт тактів
 
     public void start() {
 // Запускаємо метод step кожну секунду
@@ -64,26 +65,55 @@ public class SimulationEngine {
     }
 
     private void step() {
-
-       // private void step() {
-           System.out.println("=== Початок такту симуляції ===");
+        try {
+            // Перевіряємо умову зупинки за лімітом тактів
+            if (currentTick >= MAX_TICKS) {
+                System.out.println("---Симуляція завершена: досягнуто ліміт тактів (" + MAX_TICKS + ") ---");
+                stop();
+                return;
+            }
+            currentTick++;
+            System.out.println("=== Початок такту симуляції (" + currentTick + "/" + MAX_TICKS + ") ===");
 
             // 0. Фаза росту рослин (відновлення бази живлення)
             runPhaseParallel(Cell::growPlants);
-            // 1. Фаза живлення (тварини їдять рослин або інших тварин)
+            // 1. Фаза живлення (тварини їдять рослини або інших тварин)
             runPhaseParallel(Cell::eat);
             // 2. Фаза розмноження
             runPhaseParallel(Cell::reproduce);
-             // 3. Фаза переміщення по карті
-             runPhaseParallel(cell->cell.move(map));
+            // 3. Фаза переміщення по карті
+            runPhaseParallel(cell -> cell.move(map));
             // 4. Зменшення рівня ситості та зачистка тих, хто помер від голоду
             runPhaseParallel(Cell::updateSatiety);
 
             System.out.println("=== Такт завершено ===");
-            printStats();
+
+            // 2. Умова зупинки при вимиранні
+
+            Map<OrganismType, Integer> stats = printStats();
+
+            long totalAnimalsAlive = 0;
+            for(Map.Entry<OrganismType, Integer> entry : stats.entrySet()){
+                if(entry.getKey() != OrganismType.PLANT) {
+                    totalAnimalsAlive += entry.getValue();
+                }
+            }
+            if (totalAnimalsAlive <= 0) {
+                System.out.println(("---Симуляція зупинена: на острові не залишилось жодної тварини (вимирання)---"));
+                stop();
+                return;
+            }
+
+        } catch (Exception e) {
+            // Захист від "тихого падіння" шедулера
+            System.err.println("Критична помилка в циклі симуляції: " + e.getMessage());
+            e.printStackTrace();
+            stop();// Зупиняємо шедулер у разі аварії
         }
 
-    private void printStats() {
+    }
+
+    private  Map<OrganismType, Integer> printStats() {
         Map<OrganismType, Integer> stats = new HashMap<>();
 
          for(int x = 0; x < map.getWidth(); x++){
@@ -107,9 +137,12 @@ public class SimulationEngine {
              System.out.println(entry.getKey().getIcon()+ " " + " :   " + entry.getKey() + ": " + entry.getValue());
          }
         System.out.println("---------------------------\n");
+
+         return stats;
     }
        public void stop () {
             executor.shutdown();
+            cellWorkerPool.shutdown();
         }
 
     }

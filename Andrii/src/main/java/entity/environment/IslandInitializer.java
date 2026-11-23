@@ -55,9 +55,24 @@ public class IslandInitializer {
 
     private void addOrganisms(Cell cell, OrganismType type, Supplier<Organism> supplier){
         int maxCount = type.getMaxOnCell();
-         //Рандомно заселяємо.Рослини заселяємо побільше, а травоїдних урізаємо на старті в 15 разів:
-            int divisor = (type == OrganismType.PLANT) ? 2 : 15;
-        int count = ThreadLocalRandom.current().nextInt(0, maxCount / divisor + 1);
+
+        int divisor;
+
+
+        if (type == OrganismType.PLANT) {
+            divisor = 1; // траву не трогаем — оставляем как есть
+
+        } else if (isPredator(type)) {
+            divisor = 35; // хищников на старте меньше
+
+        } else {
+            divisor = 8; // травоядные и всеядные стартуют плотнее хищников
+
+        }
+
+        int limit = Math.max(1, maxCount / divisor);
+        int minCount = (type == OrganismType.PLANT) ? limit : 0;
+        int count = ThreadLocalRandom.current().nextInt(minCount, limit + 1);
 
         for(int i = 0; i < count; i++){
                cell.addOrganism(supplier.get());//Виклик потокобезпечної реалізації
@@ -65,4 +80,12 @@ public class IslandInitializer {
         }
 
     }
+    private boolean isPredator(OrganismType type) {
+        return type == OrganismType.WOLF
+                || type == OrganismType.FOX
+                || type == OrganismType.BEAR
+                || type == OrganismType.BOA
+                || type == OrganismType.EAGLE;
+    }
+
 }

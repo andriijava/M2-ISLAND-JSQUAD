@@ -1,7 +1,7 @@
 package entity.impl;
 
-import entity.abstraction.OrganismType;
 import entity.abstraction.Animal;
+import entity.abstraction.OrganismType;
 
 
 public class Mouse  extends Animal{
